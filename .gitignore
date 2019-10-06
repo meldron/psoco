@@ -1,0 +1,8 @@
+*.swp
+/target
+**/*.rs.bk
+.vscode
+__pycache__
+.mypy_cache
+config*.toml
+psono.py
