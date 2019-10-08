@@ -51,6 +51,10 @@ pub enum APIError {
     IOError { error: std::io::Error },
     #[snafu(display("Config Error: \n{}", error))]
     ConfigError { error: String },
+    #[snafu(display("Config Path Error"))]
+    ConfigPathError {},
+    #[snafu]
+    SilentError {},
 }
 
 impl std::convert::From<std::io::Error> for APIError {

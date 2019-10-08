@@ -349,8 +349,8 @@ impl<'a> ApiClient {
         for (share_id, share_index_data) in share_index {
             let mut share = match self.get_share(share_id, &share_index_data.secret_key) {
                 Ok(s) => s,
-                Err(e) => {
-                    println!("Skipping share {}: {}", &share_id, e);
+                Err(_e) => {
+                    // println!("Skipping share {}: {}", &share_id, e);
                     continue;
                 }
             };
@@ -378,8 +378,8 @@ impl<'a> ApiClient {
             .for_each(|(share_id, share_index_data)| {
                 let mut share = match self.get_share(share_id, &share_index_data.secret_key) {
                     Ok(s) => s,
-                    Err(e) => {
-                        println!("Skipping share {}: {}", &share_id, e);
+                    Err(_e) => {
+                        // println!("Skipping share {}: {}", &share_id, e);
                         return;
                     }
                 };

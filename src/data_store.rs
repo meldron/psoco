@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use prettytable::{Cell, Row};
+use serde_json::{json, Value as JSONValue};
+
 pub use crate::crypto::*;
 pub use crate::errors::*;
 
@@ -449,17 +452,39 @@ impl Share {
         })
     }
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SecretItem {
     pub id: String,
     pub name: String,
     pub path: Vec<String>,
+    #[serde(skip_serializing)]
     pub secret_id: String,
+    #[serde(skip_serializing)]
     pub secret_key: String,
+    #[serde(skip_serializing)]
     pub urlfilter: Option<String>,
 }
 
 impl SecretItem {
+    pub fn contains(&self, search: &str) -> bool {
+        if self.name.to_lowercase().contains(search) {
+            return true;
+        }
+
+        if let Some(uf) = &self.urlfilter {
+            if uf.to_lowercase().contains(search) {
+                return true;
+            }
+        }
+
+        for p in &self.path {
+            if p.to_lowercase().contains(search) {
+                return true;
+            }
+        }
+
+        false
+    }
     pub fn short_path(&self) -> Vec<String> {
         let short_paths: Vec<String> = self
             .path
@@ -480,6 +505,20 @@ impl SecretItem {
 
         short_paths
     }
+    pub fn to_row_short_paths(&self) -> Row {
+        Row::new(vec![
+            Cell::new(&self.name),
+            Cell::new(&self.short_path().join(",")),
+            Cell::new(&self.id),
+        ])
+    }
+    pub fn to_row(&self) -> Row {
+        Row::new(vec![
+            Cell::new(&self.name),
+            Cell::new(&self.path.join(",")),
+            Cell::new(&self.id),
+        ])
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -490,4 +529,116 @@ pub struct SecretValues {
     pub website_password_username: Option<String>,
     pub website_password_url: Option<String>,
     pub website_password_title: Option<String>,
+}
+
+impl SecretValues {
+    pub fn contains(&self, search: &str) -> bool {
+        if let Some(s) = &self.website_password_url_filter {
+            if s.to_lowercase().contains(search) {
+                return true;
+            }
+        }
+
+        if let Some(s) = &self.website_password_notes {
+            if s.to_lowercase().contains(search) {
+                return true;
+            }
+        }
+
+        if let Some(s) = &self.website_password_username {
+            if s.to_lowercase().contains(search) {
+                return true;
+            }
+        }
+
+        if let Some(s) = &self.website_password_password {
+            if s.to_lowercase().contains(search) {
+                return true;
+            }
+        }
+
+        if let Some(s) = &self.website_password_url {
+            if s.to_lowercase().contains(search) {
+                return true;
+            }
+        }
+
+        if let Some(s) = &self.website_password_title {
+            if s.to_lowercase().contains(search) {
+                return true;
+            }
+        }
+
+        false
+    }
+    pub fn to_row_all(&self, id: &str) -> Row {
+        let empty = String::from("");
+        Row::new(vec![
+            Cell::new(id),
+            Cell::new(&self.website_password_title.as_ref().unwrap_or(&empty)),
+            Cell::new(&self.website_password_username.as_ref().unwrap_or(&empty)),
+            Cell::new(&self.website_password_password.as_ref().unwrap_or(&empty)),
+            Cell::new(&self.website_password_notes.as_ref().unwrap_or(&empty)),
+            Cell::new(&self.website_password_url.as_ref().unwrap_or(&empty)),
+            Cell::new(&self.website_password_url_filter.as_ref().unwrap_or(&empty)),
+        ])
+    }
+    pub fn to_row_user_pwd(&self, id: &str) -> Row {
+        let empty = String::from("");
+        Row::new(vec![
+            Cell::new(id),
+            Cell::new(&self.website_password_title.as_ref().unwrap_or(&empty)),
+            Cell::new(&self.website_password_username.as_ref().unwrap_or(&empty)),
+            Cell::new(&self.website_password_password.as_ref().unwrap_or(&empty)),
+        ])
+    }
+    pub fn to_row_user(&self, id: &str) -> Row {
+        let empty = String::from("");
+        Row::new(vec![
+            Cell::new(id),
+            Cell::new(&self.website_password_title.as_ref().unwrap_or(&empty)),
+            Cell::new(&self.website_password_username.as_ref().unwrap_or(&empty)),
+        ])
+    }
+    pub fn to_row_pwd(&self, id: &str) -> Row {
+        let empty = String::from("");
+        Row::new(vec![
+            Cell::new(id),
+            Cell::new(&self.website_password_title.as_ref().unwrap_or(&empty)),
+            Cell::new(&self.website_password_password.as_ref().unwrap_or(&empty)),
+        ])
+    }
+    pub fn to_json_all(&self, id: &str) -> JSONValue {
+        json!({
+            "id": id,
+            "title": &self.website_password_title,
+            "username": &self.website_password_username,
+            "password": &self.website_password_password,
+            "notes": &self.website_password_notes,
+            "url": &self.website_password_url,
+            "url_filter": &self.website_password_url_filter,
+        })
+    }
+    pub fn to_json_user_pwd(&self, id: &str) -> JSONValue {
+        json!({
+            "id": id,
+            "title": &self.website_password_title,
+            "username": &self.website_password_username,
+            "password": &self.website_password_password
+        })
+    }
+    pub fn to_json_user(&self, id: &str) -> JSONValue {
+        json!({
+            "id": id,
+            "title": &self.website_password_title,
+            "username": &self.website_password_username,
+        })
+    }
+    pub fn to_json_pwd(&self, id: &str) -> JSONValue {
+        json!({
+            "id": id,
+            "title": &self.website_password_title,
+            "password": &self.website_password_password
+        })
+    }
 }
