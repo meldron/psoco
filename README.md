@@ -1,0 +1,2 @@
+# psoco
+PSONO console client
