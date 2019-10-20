@@ -6,7 +6,8 @@ use std::time::Instant;
 
 use directories::ProjectDirs;
 use rayon::prelude::*;
-use termion::{color, style};
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use std::io::Write;
 
 use serde_json::{json, Value as JSONValue};
 
@@ -115,9 +116,12 @@ fn search(
     let searches_lower: Vec<String> = searches.iter().map(|s| s.to_lowercase()).collect();
 
     let datastores = get_datastores_with_shares(&client)?;
-    let datastores_secret_list: Vec<(&str, Vec<SecretItem>)> = datastores
-        .iter()
-        .map(|d| (d.id.as_str(), d.get_secrets_list()))
+    let datastores_secret_list: Vec<(String, Vec<SecretItem>)> = datastores
+        .into_iter()
+        .map(|d| {
+            let sl = d.get_secrets_list();
+            (d.id, sl)
+        })
         .collect();
     let mut matches: Vec<(&str, &SecretItem)> = Vec::new();
 
@@ -244,7 +248,7 @@ fn list(config_path: PathBuf, show_full_path: bool) -> Result<(), errors::APIErr
         table.add_row(row![bFg => "Name", "Password", "Path", "ID"]);
         for (i, s) in (&sl).iter().enumerate() {
             let sv = secrets.get(i);
-            let password = match sv {
+            let _password = match sv {
                 Some(p) => match p {
                     Some(v) => v.website_password_password.as_ref(),
                     None => None,
@@ -265,13 +269,11 @@ fn list(config_path: PathBuf, show_full_path: bool) -> Result<(), errors::APIErr
 
 fn config_show(config_path: PathBuf) -> Result<(), APIError> {
     let r = Config::load_unverified(&config_path);
+    let mut stdout = StandardStream::stdout(ColorChoice::Always);
 
     if let Err(e) = r {
-        eprintln!(
-            "Could not open config '{}': {}",
-            config_path.to_string_lossy(),
-            e
-        );
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+        writeln!(&mut stdout, "Could not open config '{}': {}", config_path.to_string_lossy(), e).expect("could not write");
         return Ok(());
     }
 
@@ -280,10 +282,8 @@ fn config_show(config_path: PathBuf) -> Result<(), APIError> {
         .expect("config toml failed, should not happen because it was loaded from toml");
 
     eprintln!(
-        "Config at '{}{}{}':\n",
-        style::Bold,
+        "Config at '{}':\n",
         config_path.to_string_lossy(),
-        style::Reset,
     );
 
     println!("{}", config_toml);
@@ -291,9 +291,9 @@ fn config_show(config_path: PathBuf) -> Result<(), APIError> {
     let verified = config.verify();
 
     if let Err(e) = verified {
-        eprintln!("{}{}", color::Fg(color::Red), e);
+        eprintln!("{}", e);
     } else {
-        eprintln!("{}Config is verified", color::Fg(color::Green));
+        eprintln!("Config is verified");
     };
 
     Ok(())
@@ -302,17 +302,14 @@ fn config_show(config_path: PathBuf) -> Result<(), APIError> {
 fn config_create(config_path: PathBuf, overwrite: bool) -> Result<(), APIError> {
     if config_path.as_path().exists() && !overwrite {
         eprintln!(
-            "{}Config at '{}' already exists and --overwrite not set",
-            color::Fg(color::Red),
+            "Config at '{}' already exists and --overwrite not set",
             config_path.to_string_lossy(),
         );
         exit(1);
     }
     eprintln!(
-        "Create config at '{}{}{}':\n",
-        style::Bold,
+        "Create config at '{}':\n",
         config_path.to_string_lossy(),
-        style::Reset,
     );
     let config = Config::from_stdin();
 
@@ -320,8 +317,7 @@ fn config_create(config_path: PathBuf, overwrite: bool) -> Result<(), APIError> 
         if !p.exists() {
             if let Err(e) = create_dir_all(p) {
                 eprintln!(
-                    "{}Could not create path '{}' (needed as config dir): {}",
-                    color::Fg(color::Red),
+                    "Could not create path '{}' (needed as config dir): {}",
                     p.to_string_lossy(),
                     e,
                 );
@@ -333,8 +329,7 @@ fn config_create(config_path: PathBuf, overwrite: bool) -> Result<(), APIError> 
     match config.save(&config_path) {
         Ok(()) => {
             eprintln!(
-                "\n{}Config written to '{}'",
-                color::Fg(color::Green),
+                "\nConfig written to '{}'",
                 config_path.to_string_lossy()
             );
             Ok(())
@@ -386,7 +381,7 @@ fn get_secret_values(
         .collect();
 
     if matches.is_empty() {
-        eprintln!("{}Nothing found", color::Fg(color::Red));
+        eprintln!("Nothing found");
         exit(1);
     }
 
@@ -397,8 +392,7 @@ fn get_secret_values(
                 Ok(sv) => (s, sv),
                 Err(e) => {
                     eprintln!(
-                        "{}Could not get secret values for '{}': {}",
-                        color::Fg(color::Red),
+                        "Could not get secret values for '{}': {}",
                         &s.id,
                         e
                     );
@@ -428,8 +422,7 @@ fn get_secret_values(
             Ok(o) => println!("{}", o),
             Err(e) => {
                 eprintln!(
-                    "{}Could not generate json output: {}",
-                    color::Fg(color::Red),
+                    "Could not generate json output: {}",
                     e
                 );
                 exit(1);
