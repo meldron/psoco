@@ -8,13 +8,15 @@ use serde::{Deserialize, Serialize};
 use reqwest::header::AUTHORIZATION;
 use reqwest::{Client, Method, Url};
 
+use sodiumoxide::utils::mlock;
+
 use crate::crypto::open_secret_box;
 use crate::data_store::{
     DataStore, DataStoreEncrypted, DatastoreList, DatastoreListEntry, SecretValues, Share,
     ShareIndex,
 };
 use crate::errors::*;
-use crate::login::{create_client_info_with_session_sk, LoginInfo, LoginInfoEncrypted};
+use crate::login::{create_client_info_with_session_sk, LoginInfoEncrypted};
 
 pub struct ApiClient {
     client: Client,
@@ -30,7 +32,7 @@ pub struct ApiClient {
     pub user_private_key_hex: Option<String>,
     user_secret_key_hex: Option<String>,
 
-    session_box_sk_hex: Option<Box<String>>,
+    session_box_sk_hex: Option<String>,
     session_secretbox_sk_hex: Option<String>,
     token: Option<String>,
 }
@@ -251,8 +253,7 @@ impl<'a> ApiClient {
         Ok(content)
     }
 
-    #[allow(dead_code)]
-    pub fn login(&mut self) -> Result<LoginInfo, APIError> {
+    pub fn login(&mut self) -> Result<(), APIError> {
         let (session_box_sk_hex, client_info_signed) =
             create_client_info_with_session_sk(&self.api_private_key_hex, &self.api_key_id)?;
 
@@ -267,15 +268,18 @@ impl<'a> ApiClient {
         let login_info =
             login_info_encrypted.open(&self.server_signature_hex, &session_box_sk_hex)?;
 
-        self.session_box_sk_hex = Some(Box::new(session_box_sk_hex));
+        self.session_box_sk_hex = Some(session_box_sk_hex);
         self.session_secretbox_sk_hex = Some(login_info.session_secret_key.clone());
 
         self.user_private_key_hex = Some(login_info.open_private_key(&self.api_secret_key_hex)?);
         self.user_secret_key_hex = Some(login_info.open_secret_key(&self.api_secret_key_hex)?);
 
-        self.token = Some(login_info.token.clone());
+        let mut token = login_info.token.clone();
+        unsafe { mlock(token.as_bytes_mut()).expect("could not mlock token"); }
 
-        Ok(login_info)
+        self.token = Some(token);
+
+        Ok(())
     }
 
     #[allow(dead_code)]
