@@ -1,6 +1,6 @@
+use std::fs;
 use std::io;
 use std::io::Write;
-use std::fs;
 use std::path::PathBuf;
 
 use reqwest::Url;
@@ -12,6 +12,16 @@ pub use crate::errors::*;
 
 fn default_as_false() -> bool {
     false
+}
+
+fn redact_key(k: &str) -> String {
+    let start: String = k.chars().take(4).collect();
+    let end: String = k.chars().rev().take(4).collect();
+    let fill: String = match k.len() {
+        0..=7 => "000".to_owned(),
+        _ => "0".repeat(k.len() - 8),
+    };
+    format!("{}{}{}", start, fill, end)
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -73,14 +83,31 @@ impl Config {
     }
 
     pub fn default() -> Self {
-         Config {
+        Config {
             api_key_id: "00c0ffee-babe-dead-beef-dec0de000000".to_owned(),
-            api_key_private_key: "1234567890123456789012345678901234567890123456789012345678901234".to_owned(),
-            api_key_secret_key: "4321098765432109876543210987654321098765432109876543210987654321".to_owned(),
+            api_key_private_key: "1234567890123456789012345678901234567890123456789012345678901234"
+                .to_owned(),
+            api_key_secret_key: "4321098765432109876543210987654321098765432109876543210987654321"
+                .to_owned(),
             server_url: "https://www.psono.pw/server".to_owned(),
-            server_signature: "a16301bd25e3a445a83b279e7091ea91d085901933f310fdb1b137db9676de59".to_owned(),
+            server_signature: "a16301bd25e3a445a83b279e7091ea91d085901933f310fdb1b137db9676de59"
+                .to_owned(),
             danger_disable_tls: false,
-        }       
+        }
+    }
+
+    pub fn redacted_keys(&self) -> Self {
+        let redacted_api_private_key = redact_key(&self.api_key_private_key);
+        let redacted_api_secret_key = redact_key(&self.api_key_secret_key);
+
+        Config {
+            api_key_id: self.api_key_id.to_owned(),
+            api_key_private_key: redacted_api_private_key,
+            api_key_secret_key: redacted_api_secret_key,
+            server_url: self.server_url.to_owned(),
+            server_signature: self.server_signature.to_owned(),
+            danger_disable_tls: self.danger_disable_tls,
+        }
     }
 
     pub fn save(&self, path: &PathBuf) -> Result<(), APIError> {
@@ -137,23 +164,23 @@ impl Config {
         let mut errors: Vec<String> = Vec::new();
 
         if let Err(e) = Config::validate_api_key_id(&self.api_key_id) {
-            errors.push(format!("api_key_id error: {}", e).to_string());
+            errors.push(format!("api_key_id error: {}", e));
         }
 
         if let Err(e) = Config::validate_server_signature(&self.server_signature) {
-            errors.push(format!("server_signature error: {}", e).to_string());
+            errors.push(format!("server_signature error: {}", e));
         };
 
         if let Err(e) = Config::validate_api_key_private_key(&self.api_key_private_key) {
-            errors.push(format!("api_key_private_key error: {}", e).to_string());
+            errors.push(format!("api_key_private_key error: {}", e));
         };
 
         if let Err(e) = Config::validate_api_key_secret_key(&self.api_key_secret_key) {
-            errors.push(format!("api_key_secret_key error: {}", e).to_string());
+            errors.push(format!("api_key_secret_key error: {}", e));
         };
 
         if let Err(e) = Config::validate_server_url(&self.server_url) {
-            errors.push(format!("server_url error: {}", e).to_string());
+            errors.push(format!("server_url error: {}", e));
         };
 
         if !errors.is_empty() {

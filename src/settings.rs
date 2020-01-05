@@ -22,14 +22,14 @@ pub enum Command {
     #[structopt(about = "list all entries as table")]
     List {
         #[structopt(short = "j", long, help = "output as json")]
-        json: bool,   
+        json: bool,
         #[structopt(short = "f", long, help = "do not shorten entries' path")]
         full_path: bool,
     },
     #[structopt(about = "search all datastores")]
     Search {
         #[structopt(short = "j", long, help = "output as json")]
-        json: bool,    
+        json: bool,
         #[structopt(short = "f", long, help = "do not shorten entries' path")]
         full_path: bool,
         #[structopt(short = "s", long, help = "search secrets (notes, username, urls...)")]
@@ -66,7 +66,12 @@ pub enum Command {
 #[derive(StructOpt, Debug)]
 pub enum ConfigCommand {
     #[structopt(about = "Display the current config (if set)")]
-    Show {},
+    Show {
+        #[structopt(short = "r", long, help = "show only config")]
+        raw: bool,
+        #[structopt(short = "p", long, help = "do not redact private keys")]
+        show_private_keys: bool,
+    },
     #[structopt(about = "Interactively create a config")]
     Create {
         #[structopt(short = "o", long, help = "overwrite config if it already exists")]
