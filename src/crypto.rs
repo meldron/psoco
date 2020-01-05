@@ -37,7 +37,7 @@ pub fn verify_signature(
     public_key_hex: &str,
     msg: &str,
     signature_hex: &str,
-) -> Result<(bool), APIError> {
+) -> Result<bool, APIError> {
     let public_key = ED25519PublicKey::from_hex(public_key_hex)?;
     let signature = Signature::from_hex(&signature_hex)?;
     Ok(verify_detached(&signature, msg.as_bytes(), &public_key))
