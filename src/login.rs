@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use serde_json::ser::to_string;
 
+use sodiumoxide::utils::{mlock, memzero};
+
 pub use crate::errors::*;
 
 pub use crate::crypto::create_session_keys_hex;
@@ -55,8 +57,17 @@ pub struct LoginInfo {
     pub user: User,
 }
 
+impl Drop for LoginInfo {
+    fn drop(&mut self) {
+        unsafe {
+            memzero(self.token.as_bytes_mut());
+            memzero(self.session_secret_key.as_bytes_mut());
+        }
+    }
+}
+
 impl LoginInfoEncrypted {
-    fn decrypt(&self, session_sk_hex: &str) -> Result<(LoginInfo), APIError> {
+    fn decrypt(&self, session_sk_hex: &str) -> Result<LoginInfo, APIError> {
         decrypt_login_info(
             &self.login_info,
             &self.login_info_nonce,
@@ -77,7 +88,7 @@ impl LoginInfoEncrypted {
         &self,
         server_signature_hex: &str,
         session_sk_hex: &str,
-    ) -> Result<(LoginInfo), APIError> {
+    ) -> Result<LoginInfo, APIError> {
         let verified = self.verify(server_signature_hex)?;
 
         if !verified {
@@ -113,7 +124,8 @@ impl LoginInfo {
             &api_secret_key_hex,
         )?;
 
-        let private_key = String::from_utf8(private_key_raw)?;
+        let mut private_key = String::from_utf8(private_key_raw)?;
+        unsafe { mlock(private_key.as_bytes_mut()).expect("could not mlock private_key"); }
 
         Ok(private_key)
     }
@@ -139,7 +151,8 @@ impl LoginInfo {
             &api_secret_key_hex,
         )?;
 
-        let secret_key = String::from_utf8(secret_key_raw)?;
+        let mut secret_key = String::from_utf8(secret_key_raw)?;
+        unsafe { mlock(secret_key.as_bytes_mut()).expect("could not mlock secret_key"); }
 
         Ok(secret_key)
     }
