@@ -23,7 +23,8 @@ mod macros;
 
 mod api;
 mod config;
-mod crypto;
+// mod crypto;
+mod crypto2;
 mod data_store;
 mod errors;
 mod login;
@@ -31,7 +32,7 @@ mod settings;
 
 pub use settings::{Command, ConfigCommand, Settings};
 
-pub use crypto::verify_signature;
+// pub use crypto::verify_signature;
 pub use errors::APIError;
 
 pub use login::{
@@ -253,9 +254,15 @@ fn list(config_path: PathBuf, show_full_path: bool) -> Result<(), errors::APIErr
                 },
                 None => None,
             };
+
+            let p = match show_full_path {
+                true => s.path.clone(),
+                false => s.short_path(),
+            };
+
             table.add_row(Row::new(vec![
                 Cell::new(&s.name),
-                Cell::new(&s.short_path().join(",")),
+                Cell::new(p.join(",").as_ref()),
                 Cell::new(&s.id),
             ]));
         }
@@ -282,6 +289,7 @@ fn config_show(config_path: PathBuf, raw: bool, full_private_keys: bool) -> Resu
     }
 
     let mut config = r.expect("config_show: could not expect config_raw (should not be possible)");
+    let validated = config.validate();
 
     if !full_private_keys {
         config = config.redacted_keys();
@@ -291,18 +299,24 @@ fn config_show(config_path: PathBuf, raw: bool, full_private_keys: bool) -> Resu
         .expect("config toml failed, should not happen because it was loaded from toml");
 
     if !raw {
-        eprintln!("Config at '{}':\n", config_path.to_string_lossy(),);
+        let redacted_text = match full_private_keys {
+            true => "",
+            false => "Redacted ",
+        };
+        eprintln!(
+            "{}Config at '{}':\n",
+            redacted_text,
+            config_path.to_string_lossy(),
+        );
     }
 
     println!("{}", config_toml);
 
-    let verified = config.verify();
-
     if !raw {
-        if let Err(e) = verified {
+        if let Err(e) = validated {
             eprintln!("{}", e);
         } else {
-            eprintln!("Config is verified");
+            eprintln!("Config is valid");
         };
     }
 
@@ -393,25 +407,35 @@ fn print_as_json(matches_with_secrets: Vec<(SecretItem, SecretValues)>, output_d
     }
 }
 
-fn print_single(matches_with_secrets: &(SecretItem, SecretValues), output_data: OutputData) {
-    if output_data == OutputData::Pwd {
-        println!(
+fn print_single(
+    matches_with_secrets: &(SecretItem, SecretValues),
+    output_data: OutputData,
+    without_new_line: bool,
+) {
+    let output = match output_data {
+        OutputData::Pwd => format!(
             "{}",
             &matches_with_secrets
                 .1
                 .website_password_password
                 .as_ref()
                 .unwrap_or(&String::from(""))
-        );
-    } else {
-        println!(
+        ),
+        OutputData::User => format!(
             "{}",
             &matches_with_secrets
                 .1
                 .website_password_username
                 .as_ref()
                 .unwrap_or(&String::from(""))
-        );
+        ),
+        _ => panic!("print_single called with {:?}", output_data),
+    };
+
+    if without_new_line {
+        print!("{}", output);
+    } else {
+        println!("{}", output);
     }
 }
 
@@ -460,6 +484,7 @@ fn print_secret_values(
     ids: Vec<String>,
     output_data: OutputData,
     as_json: bool,
+    without_new_line: bool,
 ) -> Result<(), APIError> {
     let mut client = get_client(config_path)?;
     client.login()?;
@@ -501,7 +526,7 @@ fn print_secret_values(
     if matches_with_secrets.len() == 1
         && (output_data == OutputData::Pwd || output_data == OutputData::User)
     {
-        print_single(&matches_with_secrets[0], output_data);
+        print_single(&matches_with_secrets[0], output_data, without_new_line);
 
         return Ok(());
     }
@@ -538,6 +563,7 @@ fn main() -> Result<(), errors::APIError> {
             json,
             user,
             all,
+            without_new_line,
             ids,
         } => {
             let output_data = if all {
@@ -547,12 +573,13 @@ fn main() -> Result<(), errors::APIError> {
             } else {
                 OutputData::Pwd
             };
-            print_secret_values(config_path, ids, output_data, json)
+            print_secret_values(config_path, ids, output_data, json, without_new_line)
         }
         Command::User {
             json,
             pwd,
             all,
+            without_new_line,
             ids,
         } => {
             let output_data = if all {
@@ -562,7 +589,12 @@ fn main() -> Result<(), errors::APIError> {
             } else {
                 OutputData::User
             };
-            print_secret_values(config_path, ids, output_data, json)
+            print_secret_values(config_path, ids, output_data, json, without_new_line)
         }
+        Command::All {
+            json,
+            without_new_line,
+            ids,
+        } => print_secret_values(config_path, ids, OutputData::All, json, without_new_line),
     }
 }

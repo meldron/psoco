@@ -7,7 +7,8 @@ use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-pub use crate::crypto::{BoxSecretKey, ED25519PublicKey, FromHex, SecretBoxKey};
+// pub use crate::crypto::{BoxSecretKey, ED25519PublicKey, FromHex, SecretBoxKey};
+pub use crate::crypto2::{check_box_key, check_secret_box_key, check_signature_key};
 pub use crate::errors::*;
 
 fn default_as_false() -> bool {
@@ -141,21 +142,15 @@ impl Config {
     }
 
     pub fn validate_server_signature(server_signature: &str) -> Result<(), String> {
-        ED25519PublicKey::from_hex(server_signature)
-            .map(|_| ())
-            .map_err(|e| e.to_string())
+        check_signature_key(server_signature)
     }
 
     pub fn validate_api_key_private_key(api_key_private_key: &str) -> Result<(), String> {
-        BoxSecretKey::from_hex(api_key_private_key)
-            .map(|_| ())
-            .map_err(|e| e.to_string())
+        check_box_key(api_key_private_key)
     }
 
     pub fn validate_api_key_secret_key(api_key_secret_key: &str) -> Result<(), String> {
-        SecretBoxKey::from_hex(api_key_secret_key)
-            .map(|_| ())
-            .map_err(|e| e.to_string())
+        check_secret_box_key(api_key_secret_key)
     }
 
     pub fn validate_server_url(server_url: &str) -> Result<(), String> {

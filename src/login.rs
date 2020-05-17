@@ -1,15 +1,16 @@
 use serde::{Deserialize, Serialize};
 use serde_json::ser::to_string;
 
-use sodiumoxide::utils::{mlock, memzero};
+// use sodiumoxide::utils::{memzero, mlock};
 
 pub use crate::errors::*;
 
-pub use crate::crypto::create_session_keys_hex;
-pub use crate::crypto::open_box;
-pub use crate::crypto::open_secret_box;
-pub use crate::crypto::sign_string;
-pub use crate::crypto::verify_signature;
+pub use crate::crypto2::create_session_keys_hex;
+pub use crate::crypto2::open_box;
+pub use crate::crypto2::open_secret_box;
+pub use crate::crypto2::open_secret_box as open_secret_box2;
+pub use crate::crypto2::sign_string;
+pub use crate::crypto2::verify_signature;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ClientInfo {
@@ -57,14 +58,14 @@ pub struct LoginInfo {
     pub user: User,
 }
 
-impl Drop for LoginInfo {
-    fn drop(&mut self) {
-        unsafe {
-            memzero(self.token.as_bytes_mut());
-            memzero(self.session_secret_key.as_bytes_mut());
-        }
-    }
-}
+// impl Drop for LoginInfo {
+//     fn drop(&mut self) {
+//         unsafe {
+//             memzero(self.token.as_bytes_mut());
+//             memzero(self.session_secret_key.as_bytes_mut());
+//         }
+//     }
+// }
 
 impl LoginInfoEncrypted {
     fn decrypt(&self, session_sk_hex: &str) -> Result<LoginInfo, APIError> {
@@ -125,7 +126,7 @@ impl LoginInfo {
         )?;
 
         let mut private_key = String::from_utf8(private_key_raw)?;
-        unsafe { mlock(private_key.as_bytes_mut()).expect("could not mlock private_key"); }
+        // unsafe { mlock(private_key.as_bytes_mut()).expect("could not mlock private_key"); }
 
         Ok(private_key)
     }
@@ -151,8 +152,8 @@ impl LoginInfo {
             &api_secret_key_hex,
         )?;
 
-        let mut secret_key = String::from_utf8(secret_key_raw)?;
-        unsafe { mlock(secret_key.as_bytes_mut()).expect("could not mlock secret_key"); }
+        let secret_key = String::from_utf8(secret_key_raw)?;
+        // unsafe { mlock(secret_key.as_bytes_mut()).expect("could not mlock secret_key"); }
 
         Ok(secret_key)
     }

@@ -55,6 +55,16 @@ pub enum APIError {
     ConfigPathError {},
     #[snafu]
     SilentError {},
+    #[snafu(display("Signature Error: \n{}", error))]
+    SignatureKeyError { error: String },
+    #[snafu(display("Box seal Error: \n{}", error))]
+    BoxSealError { error: String },
+    #[snafu(display("Box open Error: \n{}", error))]
+    BoxOpenError { error: String },
+    #[snafu(display("SecretBox open Error: \n{}", error))]
+    SecretBoxOpenError { error: String },
+    #[snafu(display("SecretBox seal Error: \n{}", error))]
+    SecretBoxSealError { error: String },
 }
 
 impl std::convert::From<std::io::Error> for APIError {

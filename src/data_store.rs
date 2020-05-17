@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use prettytable::{Cell, Row};
 use serde_json::{json, Value as JSONValue};
 
-pub use crate::crypto::*;
+pub use crate::crypto2::*;
 pub use crate::errors::*;
 
 pub enum PsonoItemType {
@@ -143,7 +143,7 @@ fn folder_secrets(
                         );
                     }
                 },
-                None => println!("No shares but {} is a shared folder", shared_folder.id),
+                None => {}
             };
         }
         PsonoFolderType::Owned => {

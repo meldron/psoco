@@ -8,9 +8,9 @@ use serde::{Deserialize, Serialize};
 use reqwest::header::AUTHORIZATION;
 use reqwest::{Client, Method, Url};
 
-use sodiumoxide::utils::mlock;
+// use sodiumoxide::utils::mlock;
 
-use crate::crypto::open_secret_box;
+use crate::crypto2::open_secret_box;
 use crate::data_store::{
     DataStore, DataStoreEncrypted, DatastoreList, DatastoreListEntry, SecretValues, Share,
     ShareIndex,
@@ -274,8 +274,10 @@ impl<'a> ApiClient {
         self.user_private_key_hex = Some(login_info.open_private_key(&self.api_secret_key_hex)?);
         self.user_secret_key_hex = Some(login_info.open_secret_key(&self.api_secret_key_hex)?);
 
-        let mut token = login_info.token.clone();
-        unsafe { mlock(token.as_bytes_mut()).expect("could not mlock token"); }
+        let token = login_info.token.clone();
+        // unsafe {
+        //     mlock(token.as_bytes_mut()).expect("could not mlock token");
+        // }
 
         self.token = Some(token);
 
@@ -409,47 +411,4 @@ impl<'a> ApiClient {
         let shares = guard.into_inner().expect("could not get shares from guard");
         Ok(shares)
     }
-
-    // pub fn get_shares_by_index_con<'b>(
-    //     &self,
-    //     share_index: ShareIndex,
-    // ) -> Result<HashMap<String, Share>, APIError> {
-    //     let shares: HashMap<String, Share> = HashMap::new();
-    //     let token = self.token.clone();
-    //     let origin = self.origin.clone();
-    //     let session_secretbox_sk_hex = self.session_secretbox_sk_hex.clone();
-
-    //     let bodies = stream::iter_ok(share_index)
-    //         .map(move |(share_id, share_index_data)| {
-    //             let path = format!("{}{}/", ApiEndpoint::Share.as_str(), share_id);
-    //             call_async(
-    //                 token.as_ref().map(String::as_str),
-    //                 &origin,
-    //                 session_secretbox_sk_hex.as_ref().map(String::as_str),
-    //                 ApiEndpoint::Share.as_method(),
-    //                 &path,
-    //                 None::<&NoData>,
-    //             )
-    //             .and_then(move |content| {
-    //                 let share_encrypted: SecretMessage = serde_json::from_str(&content)?;
-    //                 let share_open = &share_encrypted.open(&share_index_data.secret_key)?;
-    //                 let share: Share = serde_json::from_str(&share_open)?;
-
-    //                 Ok(share)
-    //             })
-    //         })
-    //         .buffer_unordered(10);
-
-    //     let work = bodies
-    //         .for_each(|b| {
-    //             println!("Got {:?} bytes", b);
-    //             Ok(())
-    //         })
-    //         .map_err(|e| panic!("Error while processing: {}", e));
-
-    //     let mut rt = Runtime::new().expect("Failed to create runtime");
-    //     rt.block_on(work);
-
-    //     Ok(shares)
-    // }
 }
