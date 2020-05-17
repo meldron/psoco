@@ -28,6 +28,10 @@ SUBCOMMANDS:
     user      Get username by id. Displays a table if there is more than one result
 ```
 
+## CI/CD Usage
+
+See [ci.sh](./examples/ci.sh) for an example script on how to use `psoco` during your CI/CD process.
+
 ## Build
 
 ### Rust native
@@ -41,6 +45,11 @@ The current version builds with Rust `1.43`.
 The included `Dockerfile` can be used to build a static binary using `x86_64-unknown-linux-musl`.
 
 Afterwards the stripped binary will be located at: `./build/psoco`.
+
+```
+$> file build/psoco
+build/psoco: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, stripped
+```
 
 This way is also used to create the `psoco` releases.
 
