@@ -42,11 +42,16 @@ If you have rust installed just run `cargo build --release`.
 
 The current version builds with Rust `1.43`.
 
-### Docker to create a static linux binary (musl)
+### Docker approach to create a static linux binary (musl)
 
-The included `Dockerfile` can be used to build a static binary using `x86_64-unknown-linux-musl`.
+[build_docker.sh](./build_docker.sh) can be used to build a static binary using `x86_64-unknown-linux-musl`.
 
 Afterwards the stripped binary will be located at: `./build/psoco`.
+
+Cleanup:
+
+-   delete docker_cache directory
+-   delete
 
 ```
 $> file build/psoco
