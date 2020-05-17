@@ -1,6 +1,8 @@
 # psoco
 
-PSONO console client
+[PSONO](https://psono.com/) console client.
+
+PSONO is a secure Open Source Password Manager, which can be self hosted by anyone so you have to trust no one.
 
 ## Usage
 
@@ -19,13 +21,13 @@ OPTIONS:
     -c, --config-path <config-path>    path of the psoco config.toml [env: PSOCO_CONFIG_PATH=]
 
 SUBCOMMANDS:
-    all       Get all data of a psono entry. Displays a table if there is more than one result.
+    all       Get all entry data (user, pwd, url, ...) by id. Displays a table if there is more than one result.
     config    Show or create a psoco config
     help      Prints this message or the help of the given subcommand(s)
     list      list all entries as table
     pwd       Get passwords by id. Displays a table if there is more than one result.
     search    search all datastores
-    user      Get username by id. Displays a table if there is more than one result
+    user      Get username by id. Displays a table if there is more than one result.
 ```
 
 ## CI/CD Usage
@@ -125,4 +127,6 @@ By default only the beginning and end of the privat keys are shown and the rest 
 
 ## License
 
-[MIT](https://opensource.org/licenses/MIT)
+[The MIT License (MIT)](https://opensource.org/licenses/MIT)
+
+Copyright (c) 2020 Bernd Kaiser
