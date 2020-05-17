@@ -6,4 +6,5 @@ __pycache__
 .mypy_cache
 config*.toml
 psono.py
-cache/
+docker_cache/
+build

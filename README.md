@@ -28,6 +28,22 @@ SUBCOMMANDS:
     user      Get username by id. Displays a table if there is more than one result
 ```
 
+## Build
+
+### Rust native
+
+If you have rust installed just run `cargo build --release`.
+
+The current version builds with Rust `1.43`.
+
+### Docker to create a static linux binary (musl)
+
+The included `Dockerfile` can be used to build a static binary using `x86_64-unknown-linux-musl`.
+
+Afterwards the stripped binary will be located at: `./build/psoco`.
+
+This way is also used to create the `psoco` releases.
+
 ## Install
 
 Download `psoco` binary and place into a directory which is part of your `$PATH`.
