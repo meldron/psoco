@@ -15,11 +15,14 @@ fn default_as_false() -> bool {
 }
 
 fn redact_key(k: &str) -> String {
+    if k.len() < 64 {
+        return "X".repeat(k.len());
+    }
+
     let start: String = k.chars().take(4).collect();
-    let end: String = k.chars().rev().take(4).collect();
+    let end: String = k.chars().skip(k.len() - 4).take(4).collect();
     let fill: String = match k.len() {
-        0..=7 => "000".to_owned(),
-        _ => "0".repeat(k.len() - 8),
+        _ => "X".repeat(k.len() - 8),
     };
     format!("{}{}{}", start, fill, end)
 }
@@ -115,11 +118,12 @@ impl Config {
         fs::write(path, toml)?;
         Ok(())
     }
+
     pub fn load(path: &PathBuf) -> Result<Self, APIError> {
         let toml_raw = fs::read_to_string(path)?;
         let config: Config = toml::from_str(&toml_raw)?;
 
-        config.verify()?;
+        config.validate()?;
 
         Ok(config)
     }
@@ -160,7 +164,7 @@ impl Config {
             .map_err(|e| e.to_string())
     }
 
-    pub fn verify(&self) -> Result<(), APIError> {
+    pub fn validate(&self) -> Result<(), APIError> {
         let mut errors: Vec<String> = Vec::new();
 
         if let Err(e) = Config::validate_api_key_id(&self.api_key_id) {
