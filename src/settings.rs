@@ -45,6 +45,8 @@ pub enum Command {
         user: bool,
         #[structopt(short = "a", long, help = "include url, notes, username, url, title")]
         all: bool,
+        #[structopt(short = "w", long, help = "print single value without newline")]
+        without_new_line: bool,
         #[structopt(required = true, min_values = 1)]
         ids: Vec<String>,
     },
@@ -56,6 +58,19 @@ pub enum Command {
         pwd: bool,
         #[structopt(short = "a", long, help = "include url, notes, username, url, title")]
         all: bool,
+        #[structopt(short = "w", long, help = "print single value without newline")]
+        without_new_line: bool,
+        #[structopt(required = true, min_values = 1)]
+        ids: Vec<String>,
+    },
+    #[structopt(
+        about = "Get all entry data (user, pwd, url, ...) by id. Displays a table if there is more than one result."
+    )]
+    All {
+        #[structopt(short = "j", long, help = "output as json")]
+        json: bool,
+        #[structopt(short = "w", long, help = "print single value without newline")]
+        without_new_line: bool,
         #[structopt(required = true, min_values = 1)]
         ids: Vec<String>,
     },
